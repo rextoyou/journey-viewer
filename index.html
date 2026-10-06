@@ -1,0 +1,1133 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>
+<title>Journey Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=IM+Fell+English:ital@0;1&display=swap">
+<style>
+/* Layout: a leather-bound shelf. A header with the file controls, a row of tabs,
+   then one wide reading column. The diary tab shows a parchment page. */
+:root {
+  --bg: #efe4c9; --panel: #f7efdb; --panel2: #efe3c6; --line: #cdb98d;
+  --text: #2f2012; --muted: #6e5a3d; --gold: #8a5d0c; --red: #a8402c;
+  --page: #ead9aa; --page-ink: #35210f; --page-faded: #7a6040; --page-rule: #b79a62;
+  --on-gold: #fff7e0;
+  --k-levelup: #9a6b08; --k-death: #a8402c; --k-boss: #b5651d; --k-zone: #1f7a6e; --k-epic: #6d4bc2;
+  --k-profession: #4a7d2e; --k-exalted: #2a67ad; --k-gold: #8f7a12; --k-neardeath: #b04669; --k-duel: #4f6f8a; --k-note: #7a6a50; --k-other: #7a6a50;
+  --heat0: #e4d6b4; --heat1: #d9b46a; --heat2: #c58a2e; --heat3: #8a5d0c;
+  --font-display: "IM Fell English", Georgia, "Times New Roman", serif;
+  --font-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15100b; --panel: #1f1710; --panel2: #281d13; --line: #43321f;
+    --text: #eadfc6; --muted: #a39477; --gold: #dba84a; --red: #d16a52;
+    --page: #e6d4a4; --page-ink: #35210f; --page-faded: #7a6040; --page-rule: #b79a62;
+    --on-gold: #1b1209;
+    --k-levelup: #dba84a; --k-death: #d4604b; --k-boss: #e08a3c; --k-zone: #4fb3a5; --k-epic: #a78bfa;
+    --k-profession: #86b86b; --k-exalted: #5fa0e0; --k-gold: #e6d27a; --k-neardeath: #e58aa5; --k-duel: #8fb0c9; --k-note: #8f8470; --k-other: #8f8470;
+    --heat0: #2a2016; --heat1: #5e4521; --heat2: #98702d; --heat3: #dba84a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15100b; --panel: #1f1710; --panel2: #281d13; --line: #43321f;
+  --text: #eadfc6; --muted: #a39477; --gold: #dba84a; --red: #d16a52;
+  --page: #e6d4a4; --page-ink: #35210f; --page-faded: #7a6040; --page-rule: #b79a62;
+  --on-gold: #1b1209;
+  --k-levelup: #dba84a; --k-death: #d4604b; --k-boss: #e08a3c; --k-zone: #4fb3a5; --k-epic: #a78bfa;
+  --k-profession: #86b86b; --k-exalted: #5fa0e0; --k-gold: #e6d27a; --k-neardeath: #e58aa5; --k-duel: #8fb0c9; --k-note: #8f8470; --k-other: #8f8470;
+  --heat0: #2a2016; --heat1: #5e4521; --heat2: #98702d; --heat3: #dba84a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.45; padding-inline: 16px; padding-block: 0 48px; }
+a { color: var(--gold); }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin-inline: auto; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.6rem; margin-bottom: 12px; }
+h3 { font-size: 1.2rem; margin-bottom: 8px; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+header.top { padding-block: 22px 14px; display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: flex-end; justify-content: space-between; }
+header.top h1 { font-size: 2.3rem; line-height: 1.05; }
+header.top .tag { color: var(--muted); font-size: .95rem; margin-top: 4px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; }
+.btn:hover { border-color: var(--gold); }
+.btn.primary { background: var(--gold); color: var(--on-gold); border-color: var(--gold); font-weight: 700; }
+.btn.small { padding: 3px 9px; font-size: .88rem; }
+.status { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: .94rem; margin-bottom: 14px; }
+.status b { color: var(--text); }
+.status .sample { color: var(--on-gold); background: var(--gold); border-radius: 4px; padding: 1px 7px; font-weight: 700; font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; }
+.charpick { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+body.dragging::after { content: "Drop your save file and screenshots here"; position: fixed; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 82%, transparent); border: 3px dashed var(--gold); font-family: var(--font-display); font-size: 2rem; z-index: 50; pointer-events: none; }
+
+/* tabs */
+nav.tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 20px; scrollbar-width: thin; }
+nav.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 9px 14px 8px; color: var(--muted); white-space: nowrap; font-size: 1.02rem; }
+nav.tabs button:hover { color: var(--text); }
+nav.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--gold); font-weight: 700; }
+
+/* generic blocks */
+.grid { display: grid; gap: 14px; }
+.cols-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+.tiles { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; min-width: 0; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.tile .v { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .l { color: var(--muted); font-size: .9rem; }
+.hero { display: flex; flex-wrap: wrap; gap: 6px 28px; align-items: baseline; margin-bottom: 16px; }
+.hero .name { font-family: var(--font-display); font-size: 2.1rem; line-height: 1.1; }
+.hero .sub { color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 2px 10px; font-size: .88rem; }
+.chip i, .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--k-other)); display: inline-block; flex: none; }
+button.chip { cursor: pointer; }
+button.chip[aria-pressed="false"] { opacity: .45; }
+.empty { color: var(--muted); padding: 18px 4px; }
+.coin { display: inline-block; width: .8em; height: .8em; border-radius: 50%; vertical-align: -1px; margin-inline: 2px 3px; background: var(--cc); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .25); }
+.coin.g { --cc: #e2b53a; } .coin.s { --cc: #b9bec6; } .coin.c { --cc: #c0703a; }
+
+/* charts */
+svg.chart { width: 100%; height: auto; display: block; }
+svg.chart text { fill: var(--muted); font-family: var(--font-body); font-size: 11px; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; gap: 10px; align-items: center; font-size: .95rem; }
+.bar .t { height: 14px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+.bar .t span { display: block; height: 100%; background: var(--c, var(--gold)); border-radius: 3px; }
+.bar .n { font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+.bar .k { overflow-wrap: anywhere; }
+
+/* timeline */
+.filters { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-bottom: 14px; }
+.filters input[type="search"] { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; min-width: 0; flex: 1 1 160px; max-width: 280px; }
+.filters label { display: inline-flex; gap: 6px; align-items: center; font-size: .95rem; }
+.daygroup { margin-bottom: 18px; }
+.daygroup > h3 { position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); padding-block: 6px; z-index: 2; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.daygroup > h3 .btn { font-family: var(--font-body); }
+.ev { display: grid; grid-template-columns: 168px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.ev.noimg { grid-template-columns: 1fr; }
+.ev .shot { width: 168px; aspect-ratio: 16/10; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); background: var(--panel2); padding: 0; display: block; }
+.ev .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ev .when { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.ev .what { font-size: 1.12rem; margin: 2px 0 3px; overflow-wrap: anywhere; }
+.ev .kind { color: var(--c); font-weight: 700; font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; }
+.ev .hint { font-size: .86rem; color: var(--muted); }
+@media (max-width: 520px) { .ev { grid-template-columns: 1fr; } .ev .shot { width: 100%; } }
+
+/* diary page */
+.diary-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.diary-bar select { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; flex: 1 1 200px; min-width: 0; max-width: 360px; }
+.book { background: #2f1b0e; border-radius: 10px; padding: 12px 12px 12px 26px; box-shadow: inset 12px 0 0 #1f1109; }
+.pageface { background: var(--page); color: var(--page-ink); border-radius: 3px; padding: clamp(16px, 4vw, 34px); font-family: var(--font-display); min-height: 320px; box-shadow: inset 10px 0 14px -10px rgb(60 30 5 / .45); }
+.pageface h2 { font-size: 1.9rem; color: #7d2c1e; border-bottom: 1px solid var(--page-rule); padding-bottom: 6px; margin-bottom: 4px; }
+.pageface .meta { color: var(--page-faded); font-size: 1.05rem; margin-bottom: 12px; }
+.pageface p { margin: 6px 0; font-size: 1.15rem; line-height: 1.5; }
+.pageface .changes { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+.pageface .change { border: 1px solid var(--page-rule); border-radius: 4px; padding: 2px 9px; font-size: 1rem; background: rgb(255 255 255 / .22); }
+.pageface .change b { color: #7d2c1e; font-weight: 400; }
+.pageface ul.moments { list-style: none; margin: 8px 0; padding: 0; }
+.pageface ul.moments li { padding: 5px 0 5px 12px; border-left: 2px solid var(--page-rule); margin-bottom: 4px; font-size: 1.12rem; }
+.pageface ul.moments li time { color: var(--page-faded); font-size: .95rem; margin-right: 8px; font-variant-numeric: tabular-nums; }
+.pageface .ledger { margin-top: 16px; border-top: 1px solid #7d2c1e; padding-top: 6px; }
+.pageface .ledger h3 { color: #7d2c1e; }
+.pageface .ledger div { display: flex; justify-content: space-between; gap: 12px; font-size: 1.05rem; }
+.pageface .ledger div.sub { color: var(--page-faded); padding-left: 14px; font-size: 1rem; }
+.pageface .strip { display: flex; gap: 8px; overflow-x: auto; margin-top: 16px; padding-bottom: 6px; }
+.pageface .strip button { flex: none; width: 150px; aspect-ratio: 16/10; padding: 0; border: 2px solid var(--page-rule); border-radius: 3px; overflow: hidden; background: #cdb98d; }
+.pageface .strip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* calendar heat map */
+.heatwrap { overflow-x: auto; padding-bottom: 6px; }
+.heat rect { stroke: var(--bg); stroke-width: 1.5; rx: 2; }
+.heat rect.has { cursor: pointer; }
+.heat rect.has:hover { stroke: var(--text); }
+.legend { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: .86rem; margin-top: 8px; }
+.legend span { width: 14px; height: 14px; border-radius: 2px; display: inline-block; }
+
+/* cards: records / firsts / bestiary */
+.cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.card.faded { opacity: .6; }
+.card .big { font-family: var(--font-display); font-size: 1.6rem; line-height: 1.15; overflow-wrap: anywhere; }
+.card .lab { color: var(--muted); font-size: .9rem; }
+.card .thumb { margin-top: 8px; width: 100%; aspect-ratio: 16/10; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); padding: 0; background: var(--panel2); }
+.card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+table.t { width: 100%; border-collapse: collapse; }
+table.t th, table.t td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.t th { color: var(--muted); font-weight: 500; font-size: .9rem; }
+table.t th button { background: none; border: 0; padding: 0; color: inherit; font-weight: inherit; }
+.tablewrap { overflow-x: auto; }
+
+/* gallery */
+.gallery { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.gitem { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.gitem button.pic { padding: 0; border: 0; background: var(--panel2); aspect-ratio: 16/10; display: block; width: 100%; }
+.gitem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gitem .cap { padding: 8px 10px; font-size: .92rem; overflow-wrap: anywhere; }
+.gitem .cap small { display: block; color: var(--muted); }
+
+/* help */
+.help { margin-top: 28px; }
+.help summary { cursor: pointer; font-family: var(--font-display); font-size: 1.25rem; }
+.pathrow { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 6px 0 12px; }
+.pathrow code { font-family: var(--font-mono); font-size: .86rem; background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; overflow-wrap: anywhere; flex: 1 1 280px; min-width: 0; }
+.help ol { padding-left: 20px; }
+.help li { margin-bottom: 6px; }
+
+/* lightbox */
+#lightbox { position: fixed; inset: 0; background: rgb(8 5 2 / .93); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)); color: #f1e6cc; }
+#lightbox img { max-width: 100%; max-height: calc(100% - 96px); object-fit: contain; border-radius: 4px; }
+#lightbox .cap { text-align: center; max-width: 780px; }
+#lightbox .cap b { font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; display: block; }
+#lightbox .cap span { color: #bba982; font-size: .95rem; }
+#lightbox .lb-btn { position: absolute; background: rgb(255 255 255 / .12); border: 1px solid rgb(255 255 255 / .25); color: #fff; border-radius: 6px; width: 44px; height: 44px; font-size: 1.4rem; }
+#lightbox .lb-close { top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; }
+#lightbox .lb-prev { left: 10px; top: 50%; }
+#lightbox .lb-next { right: 10px; top: 50%; }
+@media (prefers-reduced-motion: no-preference) { #lightbox img { animation: fadein .18s ease-out; } @keyframes fadein { from { opacity: 0; } } }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Journey Viewer</h1>
+      <div class="tag">Open your For the Journey save file, add your screenshots, and read your adventure back.</div>
+    </div>
+    <div class="controls">
+      <select id="charpick" class="charpick" hidden aria-label="Character"></select>
+      <button class="btn primary" id="btn-lua" type="button">Open save file</button>
+      <button class="btn" id="btn-img" type="button">Add screenshots</button>
+      <button class="btn" id="btn-dir" type="button">Add Screenshots folder</button>
+    </div>
+  </header>
+  <div class="status" id="status" role="status"></div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+  <main id="view"></main>
+
+  <details class="help" id="help">
+    <summary>Where do I find my files?</summary>
+    <p class="muted">Nothing is uploaded anywhere. This page reads your files inside your own browser and forgets them when you close it.</p>
+    <ol>
+      <li>
+        <b>Your save file</b> for one character (the one this page needs). Copy this path, then paste it into the address bar of a Windows Explorer window and press Enter. Replace the capital words with your own account, realm and character names:
+        <div class="pathrow"><code id="p1">C:\Program Files (x86)\World of Warcraft\_classic_beta_\WTF\Account\ACCOUNTNAME\REALMNAME\CHARACTERNAME\SavedVariables\ForTheJourney.lua</code><button class="btn small" data-copy="p1" type="button">Copy</button></div>
+      </li>
+      <li>
+        <b>Optional: the account file.</b> It holds a backup of every character you have played with the addon, so the character list in the top corner fills up:
+        <div class="pathrow"><code id="p2">C:\Program Files (x86)\World of Warcraft\_classic_beta_\WTF\Account\ACCOUNTNAME\SavedVariables\ForTheJourney.lua</code><button class="btn small" data-copy="p2" type="button">Copy</button></div>
+      </li>
+      <li>
+        <b>Your screenshots:</b>
+        <div class="pathrow"><code id="p3">C:\Program Files (x86)\World of Warcraft\_classic_beta_\Screenshots</code><button class="btn small" data-copy="p3" type="button">Copy</button></div>
+        Use "Add Screenshots folder" and pick that folder, or drag the pictures onto this page.
+      </li>
+      <li>The game only writes the save file when you log out, quit, or type <code>/reload</code>. If something you did today is missing, do one of those and open the file again.</li>
+      <li>Screenshots are matched to milestones by the time in their file names (WoWScrnShot_MMDDYY_HHMMSS). Milestones from before addon version 1.33 have no exact time, so they are matched to the closest minute where possible.</li>
+    </ol>
+  </details>
+</div>
+
+<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Screenshot">
+  <button class="lb-btn lb-close" id="lb-close" type="button" aria-label="Close">&times;</button>
+  <button class="lb-btn lb-prev" id="lb-prev" type="button" aria-label="Previous">&lsaquo;</button>
+  <button class="lb-btn lb-next" id="lb-next" type="button" aria-label="Next">&rsaquo;</button>
+  <img id="lb-img" alt="">
+  <div class="cap"><b id="lb-title"></b><span id="lb-sub"></span></div>
+</div>
+<input type="file" id="in-lua" accept=".lua,.txt" multiple hidden>
+<input type="file" id="in-img" accept="image/*" multiple hidden>
+<input type="file" id="in-dir" webkitdirectory multiple hidden>
+<script>
+/*PURE-START*/
+// ---------- Lua saved-variables reader ----------
+function parseLua(src) {
+  let i = 0;
+  const n = src.length;
+  const ID = /[A-Za-z_][A-Za-z0-9_]*/y;
+  const NUM = /-?(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/y;
+  function skip() {
+    for (;;) {
+      while (i < n && src.charCodeAt(i) <= 32) i++;
+      if (src.charCodeAt(i) === 45 && src.charCodeAt(i + 1) === 45) {
+        const m = /^\[(=*)\[/.exec(src.slice(i + 2, i + 12));
+        if (m) {
+          const close = ']' + m[1] + ']';
+          const e = src.indexOf(close, i + 2 + m[0].length);
+          i = e < 0 ? n : e + close.length;
+        } else {
+          while (i < n && src.charCodeAt(i) !== 10) i++;
+        }
+        continue;
+      }
+      break;
+    }
+  }
+  function fail(msg) { throw new Error(msg + ' (near character ' + i + ')'); }
+  function str() {
+    const q = src[i++];
+    let out = '';
+    while (i < n) {
+      const c = src[i++];
+      if (c === q) return out;
+      if (c === '\\') {
+        const d = src[i++];
+        if (d === 'n') out += '\n';
+        else if (d === 't') out += '\t';
+        else if (d === 'r') out += '\r';
+        else if (d === 'a' || d === 'b' || d === 'f' || d === 'v') out += '';
+        else if (d === '\n') out += '\n';
+        else if (d >= '0' && d <= '9') {
+          let num = d;
+          while (num.length < 3 && src[i] >= '0' && src[i] <= '9') num += src[i++];
+          out += String.fromCharCode(parseInt(num, 10));
+        } else out += d;
+      } else out += c;
+    }
+    fail('Unterminated text string');
+  }
+  function longStr() {
+    const m = /^\[(=*)\[/.exec(src.slice(i, i + 12));
+    if (!m) fail('Unexpected "["');
+    const close = ']' + m[1] + ']';
+    const start = i + m[0].length;
+    const e = src.indexOf(close, start);
+    if (e < 0) fail('Unterminated long string');
+    i = e + close.length;
+    return src.slice(start, e).replace(/^\n/, '');
+  }
+  function table() {
+    i++;
+    const map = new Map();
+    let idx = 1;
+    for (;;) {
+      skip();
+      if (i >= n) fail('File ended inside a table');
+      const c = src[i];
+      if (c === '}') { i++; break; }
+      let key = null, val;
+      if (c === '[' && src[i + 1] !== '[' && src[i + 1] !== '=') {
+        i++; skip(); key = value(); skip();
+        if (src[i] !== ']') fail('Expected "]"');
+        i++; skip();
+        if (src[i] !== '=') fail('Expected "="');
+        i++; skip(); val = value();
+      } else {
+        ID.lastIndex = i;
+        const m = ID.exec(src);
+        let named = false;
+        if (m) {
+          const save = i;
+          i += m[0].length; skip();
+          if (src[i] === '=' && src[i + 1] !== '=') { i++; skip(); key = m[0]; val = value(); named = true; }
+          else i = save;
+        }
+        if (!named) { key = idx++; val = value(); }
+      }
+      if (val !== null && val !== undefined) map.set(typeof key === 'number' ? key : String(key), val);
+      skip();
+      if (src[i] === ',' || src[i] === ';') i++;
+    }
+    // A table whose keys are exactly 1..N becomes a list.
+    let seq = true;
+    for (let k = 1; k <= map.size; k++) if (!map.has(k) && !map.has(String(k))) { seq = false; break; }
+    if (seq) {
+      const arr = [];
+      for (let k = 1; k <= map.size; k++) arr.push(map.has(k) ? map.get(k) : map.get(String(k)));
+      return arr;
+    }
+    const obj = {};
+    for (const [k, v] of map) obj[k] = v;
+    return obj;
+  }
+  function value() {
+    skip();
+    const c = src[i];
+    if (c === '{') return table();
+    if (c === '"' || c === "'") return str();
+    if (c === '[') return longStr();
+    ID.lastIndex = i;
+    const w = ID.exec(src);
+    if (w) {
+      i += w[0].length;
+      if (w[0] === 'true') return true;
+      if (w[0] === 'false') return false;
+      if (w[0] === 'nil') return null;
+      fail('Unexpected word "' + w[0] + '"');
+    }
+    NUM.lastIndex = i;
+    const m = NUM.exec(src);
+    if (m) { i += m[0].length; return Number(m[0]); }
+    fail('Unexpected character "' + c + '"');
+  }
+  const out = {};
+  for (;;) {
+    skip();
+    if (i >= n) break;
+    ID.lastIndex = i;
+    const m = ID.exec(src);
+    if (!m) fail('Expected a variable name');
+    i += m[0].length; skip();
+    if (src[i] !== '=') fail('Expected "="');
+    i++; skip();
+    out[m[0]] = value();
+  }
+  return out;
+}
+
+// ---------- helpers ----------
+const asList = (x) => Array.isArray(x) ? x : (x && typeof x === 'object' ? Object.keys(x).sort((a, b) => a - b).map((k) => x[k]) : []);
+const p2 = (n) => String(n).padStart(2, '0');
+const naiveTs = (lt) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(lt || '');
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)) / 1000 : NaN;
+};
+const parseDur = (t) => {
+  if (/^</.test(t)) return 30;
+  let s = 0, m;
+  if ((m = /(\d+)h/.exec(t))) s += +m[1] * 3600;
+  if ((m = /(\d+)m/.exec(t))) s += +m[1] * 60;
+  return s;
+};
+const fmtDur = (s) => {
+  s = Math.round(s || 0);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h > 0 ? h + 'h ' + m + 'm' : m > 0 ? m + 'm' : s > 0 ? '<1m' : '0m';
+};
+const fmtNum = (n) => Math.round(n || 0).toLocaleString('en-US');
+const fmtCopperText = (c) => {
+  c = Math.floor(c || 0);
+  const g = Math.floor(c / 10000), s = Math.floor((c % 10000) / 100), k = c % 100;
+  return g > 0 ? fmtNum(g) + 'g ' + s + 's' : s > 0 ? s + 's ' + k + 'c' : k + 'c';
+};
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const prettyDate = (d) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+  if (!m) return d || '';
+  const dt = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12));
+  return DOW[dt.getUTCDay()] + ', ' + (+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + m[1];
+};
+const shortDate = (d) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+  return m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1].slice(0, 3) + ' ' + m[1] : (d || '');
+};
+
+const KINDS = {
+  levelup: 'Level up', death: 'Death', boss: 'Boss or rare', zone: 'New zone', epic: 'Epic find',
+  profession: 'Profession maxed', exalted: 'Exalted', gold: 'Gold milestone', neardeath: 'Near death',
+  duel: 'Duel won', note: 'Diary note', other: 'Other',
+};
+
+// ---------- the model the views read ----------
+function parseDay(e) {
+  const d = { date: e.day, entry: e, played: typeof e.played === 'number' ? e.played : null, level: e.level, zone: e.zone,
+    playedText: '', totalText: '', levelLine: '', changes: [], moments: [], notes: [], other: [], ledger: asList(e.ledger) };
+  for (const ln of String(e.text).split('\n')) {
+    let m;
+    if ((m = /^Played (.+?) today(?: \((.+?) in total\))?/.exec(ln))) {
+      d.playedText = m[1]; d.totalText = m[2] || '';
+      if (d.played == null) d.played = parseDur(m[1]);
+    } else if (ln.startsWith('Today: ')) {
+      d.changes = ln.slice(7).replace(/\.$/, '').split('; ').map((c) => {
+        const mm = /^(.*?) \+([\d,]+) \((.*)\)$/.exec(c);
+        return mm ? { label: mm[1], delta: mm[2], tail: mm[3] } : { label: c, delta: '', tail: '' };
+      });
+    } else if ((m = /^- (\d{2}):(\d{2}) {2}(.*)$/.exec(ln))) {
+      d.moments.push({ time: m[1] + ':' + m[2], text: m[3] });
+    } else if (ln.startsWith('- ')) {
+      d.notes.push(ln.slice(2));
+    } else if (/^Level \d+/.test(ln)) {
+      d.levelLine = ln;
+    } else if (ln.trim()) {
+      d.other.push(ln);
+    }
+  }
+  return d;
+}
+
+function buildModel(c) {
+  c = c || {};
+  const diary = asList(c.diary).filter((e) => e && typeof e.text === 'string');
+  const days = diary.filter((e) => e.kind === 'day' && e.day).map(parseDay).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const olderNotes = diary.filter((e) => e.kind !== 'day');
+  const events = [];
+  for (const m of asList(c.milestones)) {
+    if (!m || typeof m.lt !== 'string') continue;
+    events.push({ ts: m.t && Number.isFinite(+m.t) ? naiveTs(m.lt) : naiveTs(m.lt), lt: m.lt, date: m.lt.slice(0, 10), time: m.lt.slice(11, 16),
+      kind: KINDS[m.kind] ? m.kind : 'other', text: m.text || '', level: m.level, zone: m.zone, shot: (m.shot || '').toLowerCase(), legacy: false });
+  }
+  const logged = new Set(events.map((e) => e.date));
+  for (const d of days) {
+    if (logged.has(d.date)) continue;
+    for (const mo of d.moments) {
+      events.push({ ts: naiveTs(d.date + ' ' + mo.time + ':00'), lt: d.date + ' ' + mo.time, date: d.date, time: mo.time, kind: 'note',
+        text: mo.text, level: d.level, zone: d.zone, shot: '', legacy: true });
+    }
+  }
+  events.sort((a, b) => a.ts - b.ts);
+  return { c, info: c.info || {}, stats: c.stats || {}, days, events, olderNotes, sessions: asList(c.sessions) };
+}
+
+// Matches screenshots (each { stem, ts }) to milestone events.
+function matchImages(events, images) {
+  for (const im of images) im.ev = null;
+  for (const e of events) e.img = null;
+  const byStem = new Map();
+  for (const im of images) byStem.set(im.stem, im);
+  const link = (e, im) => { e.img = im; im.ev = e; };
+  for (const e of events) {
+    const im = e.shot && byStem.get(e.shot);
+    if (im && !im.ev) link(e, im);
+  }
+  for (const e of events) {
+    if (e.img || e.legacy) continue;
+    let best = null, bd = 4;
+    for (const im of images) {
+      if (im.ev || !Number.isFinite(im.ts)) continue;
+      const d = Math.abs(im.ts - e.ts);
+      if (d < bd) { bd = d; best = im; }
+    }
+    if (best) link(e, best);
+  }
+  for (const e of events) {
+    if (e.img || !e.legacy) continue;
+    let best = null;
+    for (const im of images) {
+      if (im.ev || !Number.isFinite(im.ts)) continue;
+      const d = im.ts - e.ts;
+      if (d >= -1 && d < 60 && (!best || im.ts < best.ts)) best = im;
+    }
+    if (best) link(e, best);
+  }
+}
+
+function imageFromName(name, url) {
+  const m = /^(.*)\.[A-Za-z0-9]+$/.exec(name);
+  const stem = (m ? m[1] : name).toLowerCase();
+  const t = /wowscrnshot_(\d{2})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/.exec(stem);
+  const ts = t ? Date.UTC(2000 + +t[3], +t[1] - 1, +t[2], +t[4], +t[5], +t[6]) / 1000 : NaN;
+  return { name, url, stem, ts, ev: null };
+}
+/*PURE-END*/
+/*SAMPLE-START*/
+// Example character shown before any file is opened. Shaped exactly like a real save file.
+function sampleChar() {
+  let seed = 11;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const COIN = (k) => '|TInterface\\MoneyFrame\\UI-' + k + 'Icon:14:14:2:0|t';
+  const money = (c) => { const g = Math.floor(c / 10000), s = Math.floor((c % 10000) / 100), k = c % 100;
+    return g > 0 ? fmtNum(g) + COIN('Gold') + ' ' + s + COIN('Silver') : s > 0 ? s + COIN('Silver') + ' ' + k + COIN('Copper') : k + COIN('Copper'); };
+  const route = [['Durotar', 1], ['Durotar', 5], ['The Barrens', 10], ['The Barrens', 14], ['Ashenvale', 18], ['Stonetalon Mountains', 22]];
+  const zoneAt = (lvl) => { let z = route[0][0]; for (const r of route) if (lvl >= r[1]) z = r[0]; return z; };
+  const bossAt = { 3: 'Gazz\'uz', 6: 'Fizzle Darkstorm', 8: 'Kurmokk', 12: 'Takk the Leaper', 15: 'Echeyakee', 19: 'Ripscale' };
+  const start = Date.UTC(2026, 8, 14);
+  const dayList = [0, 1, 2, 4, 5, 6, 8, 9, 11, 12, 13, 15, 16, 17, 19, 20];
+  const diary = [], milestones = [], sessions = [];
+  const stats = { levelups: 0, deaths: 0, bosskills: 0, zones: 0, epicloot: 0, professions: 0, exalted: 0, gold: 0, neardeath: 0, duelwin: 0,
+    jumps: 0, hearths: 0, flights: 0, quests: 0, fish: 0, copperEarned: 0, copperSpent: 0, mined: 0, skinned: 0, herbs: 0 };
+  const deathsByZone = {}, visitedZones = { Durotar: true }, types = {}, bosses = {};
+  const typeNames = ['Beast', 'Humanoid', 'Beast', 'Beast', 'Humanoid', 'Critter', 'Undead', 'Elemental'];
+  let level = 1, played = 0, purse = 4200, killsTotal = 0, bestKills = 0, bestQuests = 0;
+  const records = {}, firsts = {};
+  const mark = (id, lt, lvl, zone, detail) => { if (!firsts[id]) firsts[id] = { when: lt.slice(0, 10), level: lvl, zone, detail }; };
+  const proseUp = ['Ding! Level {n}. The road is getting steeper.', 'Reached level {n} today. Feeling stronger already.', 'Level {n}! I can feel the difference in my arm.'];
+  dayList.forEach((off, di) => {
+    const dt = new Date(start + off * 86400000);
+    const date = dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate());
+    const mins = ri(40, 190);
+    const startLevel = level;
+    const gain = di === dayList.length - 1 ? 1 : (rnd() < 0.8 ? ri(1, 2) : 0) + (startLevel < 10 && rnd() < .5 ? 1 : 0);
+    const hour = ri(17, 21);
+    let t = hour * 3600 + ri(0, 3000);
+    const evs = [];
+    const add = (kind, text, lvl, zone, prose) => { t += ri(60, Math.max(120, mins * 20));
+      const h = Math.min(23, Math.floor(t / 3600)), mi = Math.floor((t % 3600) / 60), s = t % 60;
+      const lt = date + ' ' + p2(h) + ':' + p2(mi) + ':' + p2(s);
+      const stem = 'WoWScrnShot_' + p2(+date.slice(5, 7)) + date.slice(8, 10) + date.slice(2, 4) + '_' + p2(h) + p2(mi) + p2(s);
+      milestones.push({ t: 0, lt, shot: stem, kind, text, level: lvl, zone });
+      evs.push({ time: p2(h) + ':' + p2(mi), prose });
+      return lt; };
+    for (let g = 0; g < gain; g++) {
+      level++; stats.levelups++;
+      const z = zoneAt(level);
+      const lt = add('levelup', 'Reached level ' + level, level, z, proseUp[ri(0, 2)].replace('{n}', level));
+      mark('levelup', lt, level, z, 'level ' + level);
+      if (!visitedZones[z]) { visitedZones[z] = true; stats.zones++; const lt2 = add('zone', 'New zone discovered: ' + z, level, z, 'Set foot in ' + z + ' for the first time.'); mark('zone', lt2, level, z, z); }
+      if (bossAt[level]) { const b = bossAt[level]; stats.bosskills++; const lt3 = add('boss', 'Defeated ' + b, level, z, b + ' is down. That one fought back.');
+        mark('boss', lt3, level, z, b); const r = bosses[b] || { count: 0, first: date }; r.count++; r.last = date; r.zone = z; bosses[b] = r; }
+    }
+    const zNow = zoneAt(level);
+    const deaths = rnd() < 0.5 ? ri(1, 2) : 0;
+    for (let k = 0; k < deaths; k++) { stats.deaths++; deathsByZone[zNow] = (deathsByZone[zNow] || 0) + 1;
+      const lt = add('death', 'You died', level, zNow, ['Fell to the ground. Again.', 'Died in ' + zNow + '. The ground won.', 'Cause of death: gravity. Gravity remains undefeated.'][ri(0, 2)]);
+      mark('death', lt, level, zNow, zNow); }
+    if (di === 3) { const lt = add('epic', 'Epic loot: Sample Warblade of Testing', level, zNow, 'Found something shiny and purple: Sample Warblade of Testing.'); mark('epic', lt, level, zNow, 'Sample Warblade of Testing'); stats.epicloot++; }
+    const quests = ri(4, 24), kills = ri(60, 340), earned = ri(2000, 90000), spent = ri(500, Math.min(earned, 40000));
+    stats.quests += quests; stats.copperEarned += earned; stats.copperSpent += spent; killsTotal += kills;
+    if (quests > 0) mark('quests', date + ' 12:00:00', startLevel, zoneAt(startLevel), '');
+    stats.fish += di % 3 === 0 ? ri(1, 6) : 0; stats.mined += ri(0, 14); stats.skinned += ri(0, 25); stats.hearths += ri(0, 2); stats.flights += ri(0, 2);
+    if (stats.fish) mark('fish', date + ' 20:00:00', startLevel, zoneAt(startLevel), '');
+    if (stats.flights) mark('flights', date + ' 20:10:00', startLevel, zoneAt(startLevel), '');
+    played += mins * 60;
+    const dayRecs = [];
+    if (kills > bestKills && bestKills > 0) { dayRecs.push('New record! Most kills in a day: ' + fmtNum(kills) + ' (was ' + fmtNum(bestKills) + ').'); }
+    if (kills > bestKills) { bestKills = kills; records.kills = { value: kills, day: date }; }
+    if (quests > bestQuests && bestQuests > 0) { dayRecs.push('New record! Most quests in a day: ' + quests + ' (was ' + bestQuests + ').'); }
+    if (quests > bestQuests) { bestQuests = quests; records.quests = { value: quests, day: date }; }
+    if (!records.earned || earned > records.earned.value) records.earned = { value: earned, day: date };
+    if (!records.played || mins * 60 > records.played.value) records.played = { value: mins * 60, day: date };
+    if (!records.session || mins * 60 * .6 > records.session.value) records.session = { value: Math.round(mins * 36), day: date };
+    const tl = [];
+    tl.push('Played ' + fmtDur(mins * 60) + ' today (' + fmtDur(played) + ' in total).');
+    tl.push((gain > 0 ? 'Level ' + startLevel + ' to ' + level : 'Level ' + level) + '. In ' + zNow + '.');
+    tl.push('Today: Quests +' + quests + ' (' + fmtNum(stats.quests) + ' total); Kills +' + kills + ' (' + fmtNum(killsTotal) + ' total)' + (deaths ? '; Deaths +' + deaths + ' (' + stats.deaths + ' total)' : '') + '; Ore mined +' + ri(1, 9) + ' (' + fmtNum(stats.mined) + ' total).');
+    for (const e of evs) tl.push('- ' + e.time + '  ' + e.prose);
+    for (const r of dayRecs) tl.push('- ' + r);
+    const nowPurse = purse + earned - spent;
+    const ledger = [['Purse at start of day', money(purse), 'main'], ['Money earned', '+' + money(earned), 'main'], ['   Quest rewards', '+' + money(Math.round(earned * .6)), 'sub'],
+      ['   Looted', '+' + money(Math.round(earned * .3)), 'sub'], ['Money spent', '-' + money(spent), 'main'], ['Purse now', money(nowPurse), 'main']];
+    purse = nowPurse;
+    diary.push({ kind: 'day', day: date, when: date + ' 22:30', level, zone: zNow, text: tl.join('\n'), ledger, played: mins * 60 });
+    sessions.unshift({ dateText: date + ' ' + p2(hour) + ':00', loginLevel: startLevel, logoutLevel: level, zone: zNow, endZone: zNow, durationSeconds: mins * 60, highlights: [], delta: {}, gameDelta: {} });
+    for (let k = 0; k < Math.round(kills / 5); k++) { const ty = typeNames[ri(0, typeNames.length - 1)]; const r = types[ty] || { count: 0, first: date }; r.count++; types[ty] = r; }
+  });
+  stats.copperEarned += 0;
+  records.deaths = { value: 2, day: diary[3].day };
+  return { info: { name: 'Thrallbane', realm: 'Example Realm', class: 'Warrior', classToken: 'WARRIOR', race: 'Orc', level, faction: 'Horde', addonVersion: '1.33', saved: '2026-10-05 22:30:00' },
+    stats, deathsByZone, sessions, diary, milestones, firsts, records, bestiary: { types, bosses }, streak: { last: diary[diary.length - 1].day, current: 3, best: 4, bestDay: diary[8].day },
+    playedTotal: played, visitedZones, _sample: true };
+}
+/*SAMPLE-END*/
+// ---------- app ----------
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Game text codes (coin pictures, colours) -> safe HTML.
+const wow = (s) => esc(s)
+  .replace(/\|T[^|]*?(Gold|Silver|Copper)Icon[^|]*?\|t/g, (m, k) => '<i class="coin ' + k[0].toLowerCase() + '"></i>')
+  .replace(/\|c[0-9a-fA-F]{8}/g, '').replace(/\|r/g, '');
+
+const TABS = [['overview', 'Overview'], ['timeline', 'Timeline'], ['diary', 'Diary'], ['calendar', 'Calendar'], ['records', 'Records & Firsts'], ['bestiary', 'Bestiary'], ['shots', 'Screenshots']];
+const FIRST_DEFS = [
+  ['levelup', 'First level-up'], ['death', 'First death'], ['quests', 'First quest handed in'], ['boss', 'First boss or rare slain'],
+  ['zone', 'First new zone discovered'], ['epic', 'First epic find'], ['profession', 'First profession maxed'], ['exalted', 'First Exalted reputation'],
+  ['neardeath', 'First near-death escape'], ['duelwin', 'First duel won'], ['flights', 'First flight'], ['hearths', 'First hearthstone home'],
+  ['fish', 'First fish caught'], ['mined', 'First ore mined'], ['skinned', 'First creature skinned'], ['herbs', 'First herb gathered'],
+  ['mount', 'First time on a mount'], ['dungeon', 'First dungeon entered'], ['raid', 'First raid entered'], ['battleground', 'First battleground entered'],
+];
+const FIRST_KIND = { levelup: 'levelup', death: 'death', boss: 'boss', zone: 'zone', epic: 'epic', profession: 'profession', exalted: 'exalted', neardeath: 'neardeath', duelwin: 'duel' };
+const RECORD_DEFS = [
+  ['kills', 'Most kills in a day', fmtNum], ['quests', 'Most quests in a day', fmtNum], ['earned', 'Most gold in a day', fmtCopperText],
+  ['deaths', 'Most deaths in a day', fmtNum], ['played', 'Longest day played', fmtDur], ['session', 'Longest session', fmtDur],
+];
+
+const S = {
+  chars: [], cur: 0, images: [], tab: 'overview', sample: false, source: '', notes: [],
+  filters: { kinds: new Set(), q: '', onlyShots: false, desc: true },
+  diaryDate: '', bestSort: ['count', -1], gfilter: 'all', lb: { list: [], i: 0 }, lbList: [],
+};
+const cur = () => S.chars[S.cur];
+const model = () => (cur() ? cur().model : null);
+
+function rematch() {
+  const m = model();
+  if (m) matchImages(m.events, S.images);
+}
+
+// ---------- example data ----------
+function sampleShot(e) {
+  const w = 640, h = 400;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  const hue = { levelup: 42, death: 6, boss: 24, zone: 172, epic: 262, profession: 100, exalted: 210, gold: 52, neardeath: 340, duel: 205 }[e.kind] || 30;
+  const g = x.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, 'hsl(' + hue + ' 45% 26%)'); g.addColorStop(0.6, 'hsl(' + hue + ' 55% 56%)'); g.addColorStop(0.6, 'hsl(' + hue + ' 25% 15%)'); g.addColorStop(1, '#0c0805');
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  x.fillStyle = 'hsl(' + hue + ' 30% 20%)';
+  x.beginPath(); x.moveTo(0, h * 0.6);
+  for (let i = 0; i <= w; i += 16) x.lineTo(i, h * 0.6 - 30 - 26 * Math.sin(i / 70 + e.ts % 7) - 14 * Math.sin(i / 23));
+  x.lineTo(w, h * 0.62); x.lineTo(0, h * 0.62); x.fill();
+  x.fillStyle = '#0c0805';
+  x.beginPath(); x.arc(w * 0.5, h * 0.66, 16, 0, 7); x.fill(); x.fillRect(w * 0.5 - 14, h * 0.66 + 14, 28, 52);
+  x.textAlign = 'center'; x.fillStyle = '#f6ebcf';
+  x.font = '32px Georgia, serif'; x.fillText(e.text.length > 30 ? e.text.slice(0, 28) + '...' : e.text, w / 2, 62);
+  x.font = '15px sans-serif'; x.fillStyle = 'rgba(255,255,255,.7)'; x.fillText('EXAMPLE SCREENSHOT', w / 2, h - 18);
+  return c.toDataURL('image/jpeg', 0.7);
+}
+function loadSample() {
+  const raw = sampleChar();
+  S.chars = [{ key: 'sample', label: raw.info.name + ' (example)', raw, model: buildModel(raw) }];
+  S.cur = 0; S.sample = true; S.source = 'Example data';
+  S.images = S.chars[0].model.events.map((e) => { const im = imageFromName(e.shot + '.jpg', sampleShot(e)); im.sample = true; return im; });
+  S.diaryDate = ''; rematch();
+}
+
+// ---------- loading files ----------
+function addChar(raw, label, source, key) {
+  if (!raw || typeof raw !== 'object') return;
+  const info = raw.info || {};
+  const nm = info.name || label || 'Your character';
+  const k = key || raw.guid || nm;
+  const existing = S.chars.findIndex((c) => c.key === k);
+  const entry = { key: k, label: nm + (info.realm ? ' - ' + info.realm : ''), raw, model: buildModel(raw), source };
+  if (existing >= 0) {
+    // keep the more recently saved copy
+    if (source === 'save file' || S.chars[existing].source !== 'save file') S.chars[existing] = entry;
+  } else S.chars.push(entry);
+}
+async function ingestFiles(files) {
+  const luas = [], imgs = [];
+  let tga = 0;
+  for (const f of files) {
+    const n = f.name.toLowerCase();
+    if (/\.(lua|txt)$/.test(n)) luas.push(f);
+    else if (/\.tga$/.test(n)) tga++;
+    else if (/\.(jpe?g|png|webp|gif|bmp)$/.test(n) || (f.type || '').startsWith('image/')) imgs.push(f);
+  }
+  S.notes = [];
+  if (tga) S.notes.push(tga + ' screenshot' + (tga === 1 ? ' is a .tga file, which browsers cannot show. Set WoW to save screenshots as JPG.' : 's are .tga files, which browsers cannot show. Set WoW to save screenshots as JPG.'));
+  if (luas.length) {
+    if (S.sample) { S.chars = []; S.images = S.images.filter((i) => !i.sample); S.sample = false; }
+    for (const f of luas) {
+      try {
+        const vars = parseLua(await f.text());
+        let found = false;
+        if (vars.ForTheJourneyCharDB && typeof vars.ForTheJourneyCharDB === 'object') {
+          found = true; addChar(vars.ForTheJourneyCharDB, '', 'save file'); S.source = f.name;
+        }
+        const bk = vars.ForTheJourneyDB && vars.ForTheJourneyDB.backups;
+        if (bk && typeof bk === 'object') {
+          found = true;
+          for (const key of Object.keys(bk)) {
+            const b = bk[key];
+            if (b && b.data && typeof b.data === 'object') addChar(b.data, 'Character ' + key.slice(-6), 'account backup', key);
+          }
+        }
+        if (!found) S.notes.push(f.name + ' does not look like a For the Journey save file (no ForTheJourneyCharDB inside).');
+      } catch (err) {
+        S.notes.push('Could not read ' + f.name + ': ' + err.message);
+      }
+    }
+    // prefer a character that came from a real save file
+    const bestIdx = S.chars.findIndex((c) => c.source === 'save file');
+    S.cur = bestIdx >= 0 ? bestIdx : 0; S.diaryDate = '';
+  }
+  if (imgs.length) {
+    if (S.sample) { S.images = S.images.filter((i) => !i.sample); }
+    const have = new Set(S.images.map((i) => i.name));
+    for (const f of imgs) if (!have.has(f.name)) S.images.push(imageFromName(f.name, URL.createObjectURL(f)));
+    S.images.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  }
+  if (S.chars.length === 0) loadSample();
+  rematch(); render();
+}
+async function collectDropped(dt) {
+  const out = [];
+  const walk = (entry) => new Promise((resolve) => {
+    if (entry.isFile) entry.file((f) => { out.push(f); resolve(); }, () => resolve());
+    else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const all = [];
+      const pump = () => reader.readEntries(async (list) => {
+        if (!list.length) { await Promise.all(all.map(walk)); resolve(); return; }
+        all.push(...list); pump();
+      }, () => resolve());
+      pump();
+    } else resolve();
+  });
+  const items = Array.from(dt.items || []);
+  if (items.length && items[0].webkitGetAsEntry) {
+    const entries = items.map((it) => it.webkitGetAsEntry()).filter(Boolean);
+    await Promise.all(entries.map(walk));
+    return out;
+  }
+  return Array.from(dt.files || []);
+}
+
+// ---------- small renderers ----------
+function lbItem(e) {
+  return { url: e.img.url, title: e.text, sub: [prettyDate(e.date), e.time, e.level ? 'Level ' + e.level : '', e.zone, e.img.name].filter(Boolean).join('  ·  ') };
+}
+function kindChip(k) { return '<span class="kind" style="--c:var(--k-' + k + ')">' + esc(KINDS[k] || k) + '</span>'; }
+function emptyMsg(t) { return '<div class="empty">' + t + '</div>'; }
+function levelPoints(m) {
+  const ups = m.events.filter((e) => e.kind === 'levelup').map((e) => { const mm = /level (\d+)/i.exec(e.text); return mm ? { ts: e.ts, v: +mm[1] } : null; }).filter(Boolean);
+  if (ups.length >= 2) return ups;
+  return m.days.filter((d) => d.level).map((d) => ({ ts: naiveTs(d.date + ' 12:00:00'), v: d.level }));
+}
+function ticks(max, n) {
+  const step = Math.max(1, Math.ceil(max / n));
+  const out = [];
+  for (let v = 0; v <= max + step * 0.01; v += step) out.push(v);
+  return out;
+}
+function lineChart(pts) {
+  if (pts.length < 2) return emptyMsg('Not enough level-ups yet to draw a chart.');
+  const W = 560, H = 230, L = 36, R = 12, T = 12, B = 28;
+  const t0 = pts[0].ts, t1 = pts[pts.length - 1].ts || t0 + 1;
+  const vmax = Math.max.apply(null, pts.map((p) => p.v));
+  const yt = ticks(vmax, 5), ymax = yt[yt.length - 1] || 1;
+  const X = (t) => L + ((t - t0) / Math.max(1, t1 - t0)) * (W - L - R);
+  const Y = (v) => T + (1 - v / ymax) * (H - T - B);
+  let d = 'M' + X(pts[0].ts).toFixed(1) + ' ' + Y(pts[0].v).toFixed(1);
+  for (let i = 1; i < pts.length; i++) d += ' H' + X(pts[i].ts).toFixed(1) + ' V' + Y(pts[i].v).toFixed(1);
+  let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Level over time">';
+  yt.forEach((v) => { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)" stroke-width="1" fill="none"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '</text>'; });
+  const xs = [0, 0.5, 1];
+  xs.forEach((f, i) => { const t = t0 + (t1 - t0) * f; s += '<text x="' + X(t) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? 'start' : i === 2 ? 'end' : 'middle') + '">' + shortDate(new Date(t * 1000).toISOString().slice(0, 10)).replace(/ \d{4}$/, '') + '</text>'; });
+  s += '<path d="' + d + '" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round"/>';
+  pts.forEach((p) => { s += '<circle cx="' + X(p.ts) + '" cy="' + Y(p.v) + '" r="3" fill="var(--gold)"><title>Level ' + p.v + '</title></circle>'; });
+  return s + '</svg>';
+}
+function playedBars(m) {
+  if (!m.days.length) return emptyMsg('No diary pages yet.');
+  const map = new Map(m.days.map((d) => [d.date, d]));
+  const last = naiveTs(m.days[m.days.length - 1].date);
+  const N = 42;
+  const list = [];
+  for (let i = N - 1; i >= 0; i--) { const ds = new Date((last - i * 86400) * 1000).toISOString().slice(0, 10); list.push({ ds, d: map.get(ds) }); }
+  const maxMin = Math.max(30, Math.ceil(Math.max.apply(null, list.map((x) => ((x.d && x.d.played) || 0) / 60)) / 30) * 30);
+  const W = 560, H = 230, L = 50, R = 8, T = 12, B = 28, bw = (W - L - R) / N;
+  let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Time played each day">';
+  [0, 0.5, 1].forEach((f) => { const y = T + (1 - f) * (H - T - B); s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="var(--line)" stroke-width="1" fill="none"/><text x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end">' + fmtDur(maxMin * 60 * f) + '</text>'; });
+  list.forEach((x, i) => {
+    const mins = ((x.d && x.d.played) || 0) / 60;
+    const h = (mins / maxMin) * (H - T - B);
+    const bx = L + i * bw + 1;
+    if (x.d) s += '<rect class="has" data-open-day="' + x.ds + '" x="' + bx + '" y="' + (T + (H - T - B) - Math.max(h, 2)) + '" width="' + Math.max(1, bw - 2) + '" height="' + Math.max(h, 2) + '" fill="var(--gold)" rx="1.5" style="cursor:pointer"><title>' + prettyDate(x.ds) + ': ' + fmtDur(mins * 60) + '</title></rect>';
+  });
+  [0, N >> 1, N - 1].forEach((i, k) => { s += '<text x="' + (L + i * bw + bw / 2) + '" y="' + (H - 8) + '" text-anchor="' + (k === 0 ? 'start' : k === 2 ? 'end' : 'middle') + '">' + shortDate(list[i].ds).replace(/ \d{4}$/, '') + '</text>'; });
+  return s + '</svg>';
+}
+function barList(rows, color) {
+  if (!rows.length) return emptyMsg('Nothing recorded yet.');
+  const max = Math.max.apply(null, rows.map((r) => r[1])) || 1;
+  return '<div class="bars">' + rows.map((r) => '<div class="bar"><span class="k">' + esc(r[0]) + '</span><span class="t"><span style="width:' + Math.max(2, (r[1] / max) * 100) + '%;' + (color ? '--c:' + color : '') + '"></span></span><span class="n">' + fmtNum(r[1]) + '</span></div>').join('') + '</div>';
+}
+
+// ---------- views ----------
+function viewOverview(m) {
+  const i = m.info, st = m.stats, c = m.c;
+  const level = i.level || (m.days.length ? m.days[m.days.length - 1].level : '');
+  const sub = [level ? 'Level ' + level : '', i.race, i.class, i.faction, i.realm].filter(Boolean).join('  ·  ');
+  let h = '<div class="hero"><span class="name">' + esc(i.name || cur().label) + '</span><span class="sub">' + esc(sub) + '</span>' +
+    (c.playedTotal ? '<span class="sub num">' + fmtDur(c.playedTotal) + ' played since the addon started watching</span>' : '') + '</div>';
+  const tiles = [
+    [level || '-', 'Level'], [m.days.length, 'Diary pages'], [st.deaths || 0, 'Deaths'], [st.bosskills || 0, 'Boss and rare kills'], [st.zones || 0, 'Zones discovered'],
+    [fmtNum(st.quests || 0), 'Quests handed in'], [st.epicloot || 0, 'Epic finds'], [fmtNum(st.fish || 0), 'Fish caught'], [fmtNum(st.mined || 0), 'Ore mined'],
+    [fmtNum(st.flights || 0), 'Flights taken'], [fmtCopperText(st.copperEarned || 0), 'Gold earned'], [(c.streak && c.streak.best) || 0, 'Best play streak (days)'],
+  ];
+  h += '<div class="grid tiles">' + tiles.map((t) => '<div class="tile"><div class="v">' + esc(t[0]) + '</div><div class="l">' + esc(t[1]) + '</div></div>').join('') + '</div>';
+  h += '<div class="grid cols-2" style="margin-top:14px"><div class="panel"><h3>Level over time</h3>' + lineChart(levelPoints(m)) + '</div><div class="panel"><h3>Time played each day</h3>' + playedBars(m) + '</div></div>';
+  const deaths = Object.keys(c.deathsByZone || {}).map((z) => [z, c.deathsByZone[z]]).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const recent = m.events.filter((e) => !e.legacy || e.img).slice(-6).reverse();
+  S.lbList = recent.filter((e) => e.img).map(lbItem);
+  let r = recent.length ? '<div>' : emptyMsg('No milestones yet.');
+  recent.forEach((e) => {
+    const li = e.img ? S.lbList.findIndex((x) => x.url === e.img.url) : -1;
+    r += '<div class="ev ' + (e.img ? '' : 'noimg') + '">' + (e.img ? '<button class="shot" type="button" data-lb="' + li + '" aria-label="Open screenshot"><img src="' + e.img.url + '" alt="" loading="lazy" decoding="async"></button>' : '') +
+      '<div><div class="when">' + kindChip(e.kind) + '<span>' + shortDate(e.date) + ' ' + esc(e.time) + '</span></div><div class="what">' + esc(e.text) + '</div><div class="hint">' + (e.level ? 'Level ' + e.level + ' · ' : '') + esc(e.zone || '') + '</div></div></div>';
+  });
+  r += recent.length ? '</div>' : '';
+  h += '<div class="grid cols-2" style="margin-top:14px"><div class="panel"><h3>Where you died</h3>' + barList(deaths, 'var(--k-death)') + '</div><div class="panel"><h3>Latest moments</h3>' + r + '</div></div>';
+  return h;
+}
+
+function tlFilters(m) {
+  const f = S.filters, present = {};
+  m.events.forEach((e) => { present[e.kind] = (present[e.kind] || 0) + 1; });
+  return '<div class="filters">' + Object.keys(KINDS).filter((k) => present[k]).map((k) =>
+    '<button class="chip" type="button" data-kind="' + k + '" aria-pressed="' + (!f.kinds.size || f.kinds.has(k)) + '" style="--c:var(--k-' + k + ')"><i></i>' + esc(KINDS[k]) + ' <span class="num">' + present[k] + '</span></button>').join('') +
+    '<input id="tl-q" type="search" placeholder="Search" aria-label="Search milestones" value="' + esc(f.q) + '">' +
+    '<label><input id="tl-shots" type="checkbox"' + (f.onlyShots ? ' checked' : '') + '> Only with screenshots</label>' +
+    '<button class="btn small" type="button" id="tl-order">' + (f.desc ? 'Newest first' : 'Oldest first') + '</button></div>';
+}
+function tlList(m) {
+  const f = S.filters, q = f.q.trim().toLowerCase();
+  let evs = m.events.filter((e) => (!f.kinds.size || f.kinds.has(e.kind)) && (!f.onlyShots || e.img) && (!q || (e.text + ' ' + (e.zone || '') + ' ' + KINDS[e.kind]).toLowerCase().includes(q)));
+  if (f.desc) evs = evs.slice().reverse();
+  S.lbList = evs.filter((e) => e.img).map(lbItem);
+  if (!evs.length) return emptyMsg(m.events.length ? 'Nothing matches those filters.' : 'No milestones yet. Milestones are logged with exact times from addon version 1.33 onward. Older ones appear from your diary pages.');
+  const loaded = S.images.length > 0 && !S.sample;
+  let h = '', day = '', open = false, li = 0;
+  evs.forEach((e) => {
+    if (e.date !== day) {
+      if (open) h += '</div>';
+      day = e.date; open = true;
+      h += '<div class="daygroup"><h3><span>' + prettyDate(day) + '</span><button class="btn small" type="button" data-open-day="' + day + '">Open diary page</button></h3>';
+    }
+    h += '<div class="ev ' + (e.img ? '' : 'noimg') + '">';
+    if (e.img) h += '<button class="shot" type="button" data-lb="' + (li++) + '" aria-label="Open screenshot"><img src="' + e.img.url + '" alt="" loading="lazy" decoding="async"></button>';
+    h += '<div><div class="when">' + kindChip(e.kind) + '<span>' + esc(e.time) + '</span>' + (e.legacy ? '<span>from your diary</span>' : '') + '</div><div class="what">' + esc(e.text) + '</div><div class="hint">' + (e.level ? 'Level ' + e.level + ' · ' : '') + esc(e.zone || '') + '</div>' +
+      (!e.img && loaded ? '<div class="hint">No screenshot matched</div>' : '') + '</div></div>';
+  });
+  return h + (open ? '</div>' : '');
+}
+function viewTimeline(m) {
+  return '<h2>Timeline</h2>' + tlFilters(m) + '<div id="tl-list">' + tlList(m) + '</div>';
+}
+
+function diaryPages(m) {
+  const dates = new Set(m.days.map((d) => d.date));
+  const notes = {};
+  m.olderNotes.forEach((e) => { const d = String(e.when || '').slice(0, 10); if (d) { (notes[d] = notes[d] || []).push(e); dates.add(d); } });
+  return Array.from(dates).sort().map((d) => ({ date: d, day: m.days.find((x) => x.date === d) || null, notes: notes[d] || [] }));
+}
+function viewDiary(m) {
+  const pages = diaryPages(m);
+  if (!pages.length) return '<h2>Diary</h2>' + emptyMsg('No diary pages yet. A page is written on days when something changed.');
+  let idx = pages.findIndex((p) => p.date === S.diaryDate);
+  if (idx < 0) { idx = pages.length - 1; S.diaryDate = pages[idx].date; }
+  const p = pages[idx], d = p.day;
+  const opts = pages.slice().reverse().map((x) => '<option value="' + x.date + '"' + (x.date === p.date ? ' selected' : '') + '>' + esc(prettyDate(x.date)) + '</option>').join('');
+  let h = '<div class="diary-bar"><button class="btn" type="button" data-diary="-1"' + (idx === 0 ? ' disabled' : '') + '>&lsaquo; Earlier</button><select id="diary-pick" aria-label="Choose a day">' + opts +
+    '</select><button class="btn" type="button" data-diary="1"' + (idx === pages.length - 1 ? ' disabled' : '') + '>Later &rsaquo;</button><span class="muted num">Page ' + (idx + 1) + ' of ' + pages.length + '</span></div>';
+  let pg = '<h2>' + esc(prettyDate(p.date)) + '</h2>';
+  if (d) {
+    pg += '<div class="meta">' + (d.playedText ? 'Played ' + esc(d.playedText) + (d.totalText ? ' (' + esc(d.totalText) + ' in total)' : '') + '. ' : '') + esc(d.levelLine) + '</div>';
+    if (d.changes.length) pg += '<div class="changes">' + d.changes.map((c) => '<span class="change">' + esc(c.label) + (c.delta ? ' <b>+' + esc(c.delta) + '</b> <span style="color:var(--page-faded)">(' + esc(c.tail) + ')</span>' : '') + '</span>').join('') + '</div>';
+    const evs = m.events.filter((e) => e.date === p.date);
+    const evByTime = {};
+    evs.forEach((e) => { (evByTime[e.time] = evByTime[e.time] || []).push(e); });
+    if (d.moments.length || d.notes.length) {
+      pg += '<ul class="moments">' + d.moments.map((mo) => '<li><time>' + esc(mo.time) + '</time>' + esc(mo.text) + '</li>').join('') + d.notes.map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul>';
+    }
+    d.other.forEach((o) => { pg += '<p>' + esc(o) + '</p>'; });
+    const shots = evs.filter((e) => e.img);
+    if (shots.length) {
+      S.lbList = shots.map(lbItem);
+      pg += '<div class="strip">' + shots.map((e, i) => '<button type="button" data-lb="' + i + '" title="' + esc(e.text) + '"><img src="' + e.img.url + '" alt="' + esc(e.text) + '" loading="lazy" decoding="async"></button>').join('') + '</div>';
+    }
+    if (d.ledger.length) {
+      pg += '<div class="ledger"><h3>Money Ledger</h3>' + d.ledger.map((r) => { const row = asList(r); const sub = row[2] === 'sub'; return '<div class="' + (sub ? 'sub' : '') + '"><span>' + esc(String(row[0] || '').trim()) + '</span><span>' + wow(row[1]) + '</span></div>'; }).join('') + '</div>';
+    }
+  }
+  p.notes.forEach((e) => { pg += '<p class="muted" style="color:var(--page-faded)">' + esc(e.text).replace(/\n/g, '<br>') + '</p>'; });
+  return h + '<div class="book"><div class="pageface">' + pg + '</div></div>';
+}
+
+function viewCalendar(m) {
+  if (!m.days.length) return '<h2>Calendar</h2>' + emptyMsg('No diary pages yet.');
+  const map = new Map(m.days.map((d) => [d.date, d]));
+  const first = naiveTs(m.days[0].date), last = naiveTs(m.days[m.days.length - 1].date);
+  const start = first - ((new Date(first * 1000).getUTCDay() + 6) % 7) * 86400;
+  const end = Math.max(last, start + 14 * 7 * 86400 - 86400);
+  const weeks = Math.ceil((end - start + 86400) / (7 * 86400));
+  const cell = 14, gap = 3, L = 30, T = 18;
+  const W = L + weeks * (cell + gap), H = T + 7 * (cell + gap);
+  let s = '<svg class="chart heat" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Days played" style="width:' + W + 'px;max-width:none">';
+  ['Mon', 'Wed', 'Fri'].forEach((n, i) => { s += '<text x="0" y="' + (T + i * 2 * (cell + gap) + cell - 3) + '">' + n + '</text>'; });
+  let lastMonth = -1;
+  for (let w = 0; w < weeks; w++) {
+    for (let dow = 0; dow < 7; dow++) {
+      const ts = start + (w * 7 + dow) * 86400;
+      if (ts > end) continue;
+      const ds = new Date(ts * 1000).toISOString().slice(0, 10);
+      if (dow === 0) { const mo = +ds.slice(5, 7); if (mo !== lastMonth) { s += '<text x="' + (L + w * (cell + gap)) + '" y="11">' + MONTHS[mo - 1].slice(0, 3) + '</text>'; lastMonth = mo; } }
+      const d = map.get(ds);
+      const mins = d ? (d.played == null ? 1 : d.played / 60) : 0;
+      const col = !d ? 'var(--heat0)' : mins < 30 ? 'var(--heat1)' : mins < 90 ? 'var(--heat2)' : 'var(--heat3)';
+      s += '<rect ' + (d ? 'class="has" data-open-day="' + ds + '" ' : '') + 'x="' + (L + w * (cell + gap)) + '" y="' + (T + dow * (cell + gap)) + '" width="' + cell + '" height="' + cell + '" fill="' + col + '"><title>' + prettyDate(ds) + (d ? ': ' + (d.played != null ? fmtDur(d.played) + ' played' : 'diary page') : ': no page') + '</title></rect>';
+    }
+  }
+  s += '</svg>';
+  const totalSec = m.days.reduce((a, d) => a + (d.played || 0), 0);
+  let run = 1, best = 1;
+  for (let i = 1; i < m.days.length; i++) { if (naiveTs(m.days[i].date) - naiveTs(m.days[i - 1].date) === 86400) run++; else run = 1; best = Math.max(best, run); }
+  const byDow = [0, 0, 0, 0, 0, 0, 0];
+  m.days.forEach((d) => { byDow[(new Date(naiveTs(d.date) * 1000).getUTCDay() + 6) % 7] += d.played || 0; });
+  const busyDow = byDow.indexOf(Math.max.apply(null, byDow));
+  const top = m.days.filter((d) => d.played).slice().sort((a, b) => b.played - a.played).slice(0, 5);
+  return '<h2>Calendar</h2><div class="panel"><div class="heatwrap">' + s + '</div><div class="legend">Less <span style="background:var(--heat0)"></span><span style="background:var(--heat1)"></span><span style="background:var(--heat2)"></span><span style="background:var(--heat3)"></span> More. Click a day to open its page.</div></div>' +
+    '<div class="grid tiles" style="margin-top:14px"><div class="tile"><div class="v">' + m.days.length + '</div><div class="l">Days with a page</div></div><div class="tile"><div class="v">' + fmtDur(totalSec) + '</div><div class="l">Played on those days</div></div><div class="tile"><div class="v">' + best + '</div><div class="l">Longest run of days in a row</div></div><div class="tile"><div class="v">' + (totalSec ? DOW[(busyDow + 1) % 7] : '-') + '</div><div class="l">Busiest weekday</div></div></div>' +
+    '<div class="panel" style="margin-top:14px"><h3>Longest days</h3>' + (top.length ? '<div class="bars">' + top.map((d) => '<div class="bar"><span class="k"><a href="#diary" data-open-day="' + d.date + '">' + shortDate(d.date) + '</a></span><span class="t"><span style="width:' + (d.played / top[0].played * 100) + '%"></span></span><span class="n">' + fmtDur(d.played) + '</span></div>').join('') + '</div>' : emptyMsg('No play time recorded yet.')) + '</div>';
+}
+
+function firstThumb(m, id, rec) {
+  const kind = FIRST_KIND[id];
+  if (!kind || !rec || rec.pre) return '';
+  const e = m.events.find((x) => x.kind === kind && x.img);
+  return e ? '<button class="thumb" type="button" data-lbone="' + m.events.indexOf(e) + '" aria-label="Open screenshot"><img src="' + e.img.url + '" alt="" loading="lazy" decoding="async"></button>' : '';
+}
+function viewRecords(m) {
+  const c = m.c, recs = c.records || {}, firsts = c.firsts || {};
+  let h = '<h2>Records</h2><div class="cards">';
+  RECORD_DEFS.forEach((r) => {
+    const v = recs[r[0]];
+    h += v && typeof v.value === 'number'
+      ? '<div class="card"><span class="lab">' + r[1] + '</span><span class="big">' + esc(r[2](v.value)) + '</span><span class="lab">' + (v.day ? '<a href="#diary" data-open-day="' + esc(v.day) + '">' + shortDate(v.day) + '</a>' : '') + '</span></div>'
+      : '<div class="card faded"><span class="lab">' + r[1] + '</span><span class="big">not yet</span></div>';
+  });
+  const st = c.streak || {};
+  h += st.best ? '<div class="card"><span class="lab">Longest play streak</span><span class="big">' + st.best + (st.best === 1 ? ' day' : ' days') + '</span><span class="lab">' + (st.bestDay ? shortDate(st.bestDay) : '') + '</span></div>' : '<div class="card faded"><span class="lab">Longest play streak</span><span class="big">not yet</span></div>';
+  h += '</div><h2 style="margin-top:28px">Firsts</h2><div class="cards">';
+  FIRST_DEFS.forEach((f) => {
+    const rec = firsts[f[0]];
+    if (rec && rec.pre) h += '<div class="card faded"><span class="lab">' + f[1] + '</span><span class="big" style="font-size:1.15rem">before the addon</span></div>';
+    else if (rec) h += '<div class="card"><span class="lab">' + f[1] + '</span><span class="big" style="font-size:1.3rem">' + esc(rec.detail || shortDate(rec.when)) + '</span><span class="lab">' + shortDate(rec.when) + ' · Level ' + esc(rec.level) + ' · ' + esc(rec.zone || '') + '</span>' + firstThumb(m, f[0], rec) + '</div>';
+    else h += '<div class="card faded"><span class="lab">' + f[1] + '</span><span class="big" style="font-size:1.15rem">not yet</span></div>';
+  });
+  return h + '</div>';
+}
+
+function viewBestiary(m) {
+  const b = m.c.bestiary || {};
+  const types = Object.keys(b.types || {}).map((k) => [k, b.types[k].count || 0]).sort((a, z) => z[1] - a[1]);
+  const total = types.reduce((a, t) => a + t[1], 0);
+  const [key, dir] = S.bestSort;
+  const rows = Object.keys(b.bosses || {}).map((k) => { const r = b.bosses[k]; return { name: k, count: r.count || 1, zone: r.zone || '', last: r.last || '', first: r.first || '' }; });
+  rows.sort((a, z) => { const x = a[key], y = z[key]; return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * dir; });
+  const th = (k, t) => '<th><button type="button" data-sort="' + k + '">' + t + (key === k ? (dir < 0 ? ' ▾' : ' ▴') : '') + '</button></th>';
+  let h = '<h2>Bestiary</h2><div class="grid cols-2"><div class="panel"><h3>Creatures slain by type</h3>' +
+    (total ? '<p class="muted" style="margin:0 0 10px">' + fmtNum(total) + ' creatures seen to fall.</p>' : '') + barList(types) + '</div>';
+  h += '<div class="panel"><h3>Notable kills</h3>' + (rows.length ? '<div class="tablewrap"><table class="t"><thead><tr><th></th>' + th('name', 'Name') + th('count', 'Kills') + th('zone', 'Where') + th('last', 'Last') + '</tr></thead><tbody>' +
+    rows.map((r) => {
+      const idx = m.events.map((e, i) => (e.kind === 'boss' && e.text === 'Defeated ' + r.name && e.img ? i : -1)).filter((i) => i >= 0).pop();
+      const e = idx != null ? m.events[idx] : null;
+      return '<tr><td style="width:64px">' + (e ? '<button class="shot" type="button" data-lbone="' + idx + '" style="width:56px;aspect-ratio:16/10;border:1px solid var(--line);padding:0;border-radius:4px;overflow:hidden;display:block" aria-label="Open screenshot"><img src="' + e.img.url + '" alt="" style="width:100%;height:100%;object-fit:cover"></button>' : '') + '</td><td>' + esc(r.name) + '</td><td class="num">' + r.count + '</td><td>' + esc(r.zone) + '</td><td class="num">' + (r.last ? shortDate(r.last) : '') + '</td></tr>';
+    }).join('') + '</tbody></table></div>' : emptyMsg('No bosses or rares slain yet.')) + '</div></div>';
+  return h;
+}
+
+function viewShots() {
+  const m = model();
+  const imgs = S.images;
+  if (!imgs.length) return '<h2>Screenshots</h2><div class="panel">' + emptyMsg('No screenshots loaded. Use "Add Screenshots folder" and pick your WoW <code>Screenshots</code> folder, or drag pictures onto this page. They stay on your computer.') + '</div>';
+  const matched = imgs.filter((i) => i.ev).length;
+  let list = imgs.filter((i) => S.gfilter === 'all' || (S.gfilter === 'matched' ? i.ev : !i.ev));
+  list = list.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  S.lbList = list.map((i) => (i.ev ? lbItem(i.ev) : { url: i.url, title: i.name, sub: 'Not matched to a milestone' }));
+  const btn = (k, t) => '<button class="chip" type="button" data-gf="' + k + '" aria-pressed="' + (S.gfilter === k) + '">' + t + '</button>';
+  let h = '<h2>Screenshots</h2><div class="filters">' + btn('all', 'All ' + imgs.length) + btn('matched', 'Matched ' + matched) + btn('unmatched', 'Not matched ' + (imgs.length - matched)) + '</div><div class="gallery">';
+  list.forEach((im, i) => {
+    h += '<div class="gitem"><button class="pic" type="button" data-lb="' + i + '" aria-label="Open screenshot"><img src="' + im.url + '" alt="" loading="lazy" decoding="async"></button><div class="cap">' +
+      (im.ev ? kindChip(im.ev.kind) + '<div>' + esc(im.ev.text) + '</div><small>' + shortDate(im.ev.date) + ' ' + esc(im.ev.time) + '</small>' : '<div>' + esc(im.name) + '</div><small>Not matched to a milestone</small>') + '</div></div>';
+  });
+  return h + '</div>';
+}
+
+// ---------- shell ----------
+function renderStatus() {
+  const m = model();
+  let h = '';
+  if (S.sample) h += '<span class="sample">Example data</span><span>Open your own save file to replace this.</span>';
+  else if (m) h += '<span>Showing <b>' + esc(cur().label) + '</b> from ' + esc(cur().source === 'save file' ? S.source : cur().source) + '</span>';
+  const real = S.images.filter((i) => !i.sample);
+  if (!S.sample || real.length) {
+    const matched = S.images.filter((i) => i.ev).length;
+    h += '<span><b>' + S.images.length + '</b> screenshots loaded, <b>' + matched + '</b> matched to milestones</span>';
+  }
+  if (m && m.info.saved) h += '<span>Saved by the game ' + esc(m.info.saved) + '</span>';
+  S.notes.forEach((n) => { h += '<span style="color:var(--red)">' + esc(n) + '</span>'; });
+  $('#status').innerHTML = h;
+  const pick = $('#charpick');
+  pick.hidden = S.chars.length < 2;
+  pick.innerHTML = S.chars.map((c, i) => '<option value="' + i + '"' + (i === S.cur ? ' selected' : '') + '>' + esc(c.label) + '</option>').join('');
+}
+function render() {
+  const m = model();
+  renderStatus();
+  $('#tabs').innerHTML = TABS.map((t) => '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (S.tab === t[0]) + '">' + esc(t[1]) + '</button>').join('');
+  if (!m) return;
+  const v = { overview: viewOverview, timeline: viewTimeline, diary: viewDiary, calendar: viewCalendar, records: viewRecords, bestiary: viewBestiary, shots: viewShots }[S.tab];
+  $('#view').innerHTML = v(m);
+}
+function setTab(t) {
+  S.tab = t;
+  try { history.replaceState(null, '', '#' + t); } catch (e) { /* the page may not allow this */ }
+  render();
+  window.scrollTo(0, 0);
+}
+
+// ---------- lightbox ----------
+function openLb(list, i) {
+  if (!list || !list.length) return;
+  S.lb = { list, i: Math.max(0, Math.min(list.length - 1, i)) };
+  showLb();
+  $('#lightbox').hidden = false;
+  $('#lb-close').focus();
+}
+function showLb() {
+  const it = S.lb.list[S.lb.i];
+  $('#lb-img').src = it.url;
+  $('#lb-title').textContent = it.title || '';
+  $('#lb-sub').textContent = it.sub || '';
+  $('#lb-prev').hidden = S.lb.i === 0;
+  $('#lb-next').hidden = S.lb.i === S.lb.list.length - 1;
+}
+function stepLb(d) { const n = S.lb.i + d; if (n >= 0 && n < S.lb.list.length) { S.lb.i = n; showLb(); } }
+function closeLb() { $('#lightbox').hidden = true; $('#lb-img').removeAttribute('src'); }
+
+// ---------- events ----------
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest('[data-tab],[data-open-day],[data-lb],[data-lbone],[data-kind],[data-diary],[data-sort],[data-gf],[data-copy],#tl-order');
+  if (!t) return;
+  if (t.matches('[data-tab]')) return setTab(t.dataset.tab);
+  if (t.dataset.openDay) { ev.preventDefault(); S.diaryDate = t.dataset.openDay; return setTab('diary'); }
+  if (t.dataset.lb != null) return openLb(S.lbList, +t.dataset.lb);
+  if (t.dataset.lbone != null) { const e = model().events[+t.dataset.lbone]; return openLb([lbItem(e)], 0); }
+  if (t.dataset.kind) {
+    const k = t.dataset.kind, f = S.filters.kinds;
+    if (!f.size) f.add(k); else if (f.has(k)) f.delete(k); else f.add(k);
+    return render();
+  }
+  if (t.dataset.diary) {
+    const pages = diaryPages(model());
+    const i = pages.findIndex((p) => p.date === S.diaryDate) + +t.dataset.diary;
+    if (i >= 0 && i < pages.length) { S.diaryDate = pages[i].date; render(); window.scrollTo(0, 0); }
+    return;
+  }
+  if (t.dataset.sort) { const k = t.dataset.sort; S.bestSort = S.bestSort[0] === k ? [k, -S.bestSort[1]] : [k, k === 'count' || k === 'last' ? -1 : 1]; return render(); }
+  if (t.dataset.gf) { S.gfilter = t.dataset.gf; return render(); }
+  if (t.dataset.copy) {
+    const el = document.getElementById(t.dataset.copy), text = el.textContent;
+    const done = () => { t.textContent = 'Copied'; setTimeout(() => { t.textContent = 'Copy'; }, 1400); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); t.textContent = 'Selected - press Ctrl+C'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+    return;
+  }
+  if (t.id === 'tl-order') { S.filters.desc = !S.filters.desc; return render(); }
+});
+document.addEventListener('input', (ev) => {
+  if (ev.target.id === 'tl-q') { S.filters.q = ev.target.value; $('#tl-list').innerHTML = tlList(model()); }
+});
+document.addEventListener('change', (ev) => {
+  const id = ev.target.id;
+  if (id === 'tl-shots') { S.filters.onlyShots = ev.target.checked; $('#tl-list').innerHTML = tlList(model()); }
+  else if (id === 'diary-pick') { S.diaryDate = ev.target.value; render(); }
+  else if (id === 'charpick') { S.cur = +ev.target.value; S.diaryDate = ''; rematch(); render(); }
+  else if (id === 'in-lua' || id === 'in-img' || id === 'in-dir') { ingestFiles(Array.from(ev.target.files)); ev.target.value = ''; }
+});
+$('#btn-lua').onclick = () => $('#in-lua').click();
+$('#btn-img').onclick = () => $('#in-img').click();
+$('#btn-dir').onclick = () => $('#in-dir').click();
+$('#lb-close').onclick = closeLb;
+$('#lb-prev').onclick = () => stepLb(-1);
+$('#lb-next').onclick = () => stepLb(1);
+$('#lightbox').addEventListener('click', (ev) => { if (ev.target.id === 'lightbox') closeLb(); });
+document.addEventListener('keydown', (ev) => {
+  if ($('#lightbox').hidden) return;
+  if (ev.key === 'Escape') closeLb(); else if (ev.key === 'ArrowLeft') stepLb(-1); else if (ev.key === 'ArrowRight') stepLb(1);
+});
+let dragDepth = 0;
+window.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); });
+window.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) document.body.classList.remove('dragging'); });
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', async (e) => {
+  e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+  ingestFiles(await collectDropped(e.dataTransfer));
+});
+
+// ---------- start ----------
+try { const h = (location.hash || '').slice(1); if (TABS.some((t) => t[0] === h)) S.tab = h; } catch (e) { /* ignore */ }
+loadSample();
+render();
+</script>
+</body></html>
