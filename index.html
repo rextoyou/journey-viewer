@@ -15,7 +15,7 @@
   --page: #dcc690; --page-ink: #2e1a0d; --page-faded: #6f5636; --page-rule: #a58a55; --page-accent: #8a1d14;
   --red: #ff6a52;
   --k-levelup: #ffd100; --k-death: #f0604a; --k-boss: #ff8a1f; --k-zone: #3fc7b4; --k-epic: #b66cf2;
-  --k-profession: #7fcf5b; --k-exalted: #5aa9ff; --k-gold: #d9c46c; --k-neardeath: #f592ae; --k-duel: #a3c2dc; --k-note: #a39885; --k-other: #a39885;
+  --k-profession: #7fcf5b; --k-exalted: #5aa9ff; --k-gold: #d9c46c; --k-neardeath: #f592ae; --k-duel: #a3c2dc; --k-first: #f3efe2; --k-note: #a39885; --k-other: #a39885;
   --heat0: #241a17; --heat1: #5e2218; --heat2: #ac3520; --heat3: #ff8f2e;
   --ch: 9px; --radius: 2px;
   --clip: polygon(0 var(--ch), var(--ch) 0, calc(100% - var(--ch)) 0, 100% var(--ch), 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, var(--ch) 100%, 0 calc(100% - var(--ch)));
@@ -449,7 +449,7 @@ const shortDate = (d) => {
 const KINDS = {
   levelup: 'Level up', death: 'Death', boss: 'Boss or rare', zone: 'New zone', epic: 'Epic find',
   profession: 'Profession maxed', exalted: 'Exalted', gold: 'Gold milestone', neardeath: 'Near death',
-  duel: 'Duel won', note: 'Diary note', other: 'Other',
+  duel: 'Duel won', first: 'A first', note: 'Diary note', other: 'Other',
 };
 
 // ---------- the model the views read ----------
@@ -488,7 +488,7 @@ function buildModel(c) {
   for (const m of asList(c.milestones)) {
     if (!m || typeof m.lt !== 'string') continue;
     events.push({ ts: m.t && Number.isFinite(+m.t) ? naiveTs(m.lt) : naiveTs(m.lt), lt: m.lt, date: m.lt.slice(0, 10), time: m.lt.slice(11, 16),
-      kind: KINDS[m.kind] ? m.kind : 'other', text: m.text || '', level: m.level, zone: m.zone, shot: (m.shot || '').toLowerCase(), legacy: false });
+      kind: KINDS[m.kind] ? m.kind : 'other', text: m.text || '', level: m.level, zone: m.zone, shot: (m.shot || '').toLowerCase(), first: typeof m.first === 'string' ? m.first : '', legacy: false });
   }
   const logged = new Set(events.map((e) => e.date));
   for (const d of days) {
@@ -564,7 +564,8 @@ function sampleChar() {
   const typeNames = ['Beast', 'Humanoid', 'Beast', 'Beast', 'Humanoid', 'Critter', 'Undead', 'Elemental'];
   let level = 1, played = 0, purse = 4200, killsTotal = 0, bestKills = 0, bestQuests = 0;
   const records = {}, firsts = {};
-  const mark = (id, lt, lvl, zone, detail) => { if (!firsts[id]) firsts[id] = { when: lt.slice(0, 10), level: lvl, zone, detail }; };
+  const stemOf = (lt) => 'WoWScrnShot_' + lt.slice(5, 7) + lt.slice(8, 10) + lt.slice(2, 4) + '_' + lt.slice(11, 13) + lt.slice(14, 16) + lt.slice(17, 19);
+  const mark = (id, lt, lvl, zone, detail, withShot) => { if (!firsts[id]) { firsts[id] = { when: lt.slice(0, 10), level: lvl, zone, detail }; if (withShot) { firsts[id].shot = stemOf(lt); firsts[id].lt = lt; } } };
   const proseUp = ['Ding! Level {n}. The road is getting steeper.', 'Reached level {n} today. Feeling stronger already.', 'Level {n}! I can feel the difference in my arm.'];
   dayList.forEach((off, di) => {
     const dt = new Date(start + off * 86400000);
@@ -575,11 +576,11 @@ function sampleChar() {
     const hour = ri(17, 21);
     let t = hour * 3600 + ri(0, 3000);
     const evs = [];
-    const add = (kind, text, lvl, zone, prose) => { t += ri(60, Math.max(120, mins * 20));
+    const add = (kind, text, lvl, zone, prose, firstId) => { t += ri(60, Math.max(120, mins * 20));
       const h = Math.min(23, Math.floor(t / 3600)), mi = Math.floor((t % 3600) / 60), s = t % 60;
       const lt = date + ' ' + p2(h) + ':' + p2(mi) + ':' + p2(s);
       const stem = 'WoWScrnShot_' + p2(+date.slice(5, 7)) + date.slice(8, 10) + date.slice(2, 4) + '_' + p2(h) + p2(mi) + p2(s);
-      milestones.push({ t: 0, lt, shot: stem, kind, text, level: lvl, zone });
+      milestones.push({ t: 0, lt, shot: stem, kind, text, level: lvl, zone, first: firstId });
       evs.push({ time: p2(h) + ':' + p2(mi), prose });
       return lt; };
     for (let g = 0; g < gain; g++) {
@@ -599,10 +600,10 @@ function sampleChar() {
     if (di === 3) { const lt = add('epic', 'Epic loot: Sample Warblade of Testing', level, zNow, 'Found something shiny and purple: Sample Warblade of Testing.'); mark('epic', lt, level, zNow, 'Sample Warblade of Testing'); stats.epicloot++; }
     const quests = ri(4, 24), kills = ri(60, 340), earned = ri(2000, 90000), spent = ri(500, Math.min(earned, 40000));
     stats.quests += quests; stats.copperEarned += earned; stats.copperSpent += spent; killsTotal += kills;
-    if (quests > 0) mark('quests', date + ' 12:00:00', startLevel, zoneAt(startLevel), '');
+    if (quests > 0 && !firsts.quests) { const lq = add('first', 'First quest handed in', startLevel, zoneAt(startLevel), 'First quest handed in. The first of many.', 'quests'); mark('quests', lq, startLevel, zoneAt(startLevel), '', true); }
     stats.fish += di % 3 === 0 ? ri(1, 6) : 0; stats.mined += ri(0, 14); stats.skinned += ri(0, 25); stats.hearths += ri(0, 2); stats.flights += ri(0, 2);
-    if (stats.fish) mark('fish', date + ' 20:00:00', startLevel, zoneAt(startLevel), '');
-    if (stats.flights) mark('flights', date + ' 20:10:00', startLevel, zoneAt(startLevel), '');
+    if (stats.fish && !firsts.fish) { const lf = add('first', 'First fish caught', startLevel, zoneAt(startLevel), 'First fish caught. A fine start.', 'fish'); mark('fish', lf, startLevel, zoneAt(startLevel), '', true); }
+    if (stats.flights && !firsts.flights) { const lw = add('first', 'First flight', startLevel, zoneAt(startLevel), 'First flight on a flight path. The world looks different from up here.', 'flights'); mark('flights', lw, startLevel, zoneAt(startLevel), '', true); }
     played += mins * 60;
     const dayRecs = [];
     if (kills > bestKills && bestKills > 0) { dayRecs.push('New record! Most kills in a day: ' + fmtNum(kills) + ' (was ' + fmtNum(bestKills) + ').'); }
@@ -628,7 +629,7 @@ function sampleChar() {
   });
   stats.copperEarned += 0;
   records.deaths = { value: 2, day: diary[3].day };
-  return { info: { name: 'Thrallbane', realm: 'Example Realm', class: 'Warrior', classToken: 'WARRIOR', race: 'Orc', level, faction: 'Horde', addonVersion: '1.33', saved: '2026-10-05 22:30:00' },
+  return { info: { name: 'Thrallbane', realm: 'Example Realm', class: 'Warrior', classToken: 'WARRIOR', race: 'Orc', level, faction: 'Horde', addonVersion: '1.34', saved: '2026-10-05 22:30:00' },
     stats, deathsByZone, sessions, diary, milestones, firsts, records, bestiary: { types, bosses }, streak: { last: diary[diary.length - 1].day, current: 3, best: 4, bestDay: diary[8].day },
     playedTotal: played, visitedZones, _sample: true };
 }
@@ -675,7 +676,7 @@ function sampleShot(e) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   const x = c.getContext('2d');
-  const hue = { levelup: 42, death: 6, boss: 24, zone: 172, epic: 262, profession: 100, exalted: 210, gold: 52, neardeath: 340, duel: 205 }[e.kind] || 30;
+  const hue = { levelup: 42, death: 6, boss: 24, zone: 172, epic: 262, profession: 100, exalted: 210, gold: 52, neardeath: 340, duel: 205, first: 125 }[e.kind] || 30;
   const g = x.createLinearGradient(0, 0, 0, h);
   g.addColorStop(0, 'hsl(' + hue + ' 45% 26%)'); g.addColorStop(0.6, 'hsl(' + hue + ' 55% 56%)'); g.addColorStop(0.6, 'hsl(' + hue + ' 25% 15%)'); g.addColorStop(1, '#0c0805');
   x.fillStyle = g; x.fillRect(0, 0, w, h);
@@ -979,10 +980,23 @@ function viewCalendar(m) {
     '<div class="panel" style="margin-top:14px"><h3>Longest days</h3>' + (top.length ? '<div class="bars">' + top.map((d) => '<div class="bar"><span class="k"><a href="#diary" data-open-day="' + d.date + '">' + shortDate(d.date) + '</a></span><span class="t"><span style="width:' + (d.played / top[0].played * 100) + '%"></span></span><span class="n">' + fmtDur(d.played) + '</span></div>').join('') + '</div>' : emptyMsg('No play time recorded yet.')) + '</div>';
 }
 
-function firstThumb(m, id, rec) {
+// The screenshot that belongs to a "first": the one the addon linked (rec.shot),
+// else a screenshot tagged with that first, else (older saves) a screenshot of
+// the same kind taken on the same day.
+function firstEvent(m, id, rec) {
+  if (!rec || rec.pre) return null;
+  const withImg = m.events.filter((x) => x.img);
+  if (rec.shot) {
+    const want = String(rec.shot).toLowerCase();
+    return withImg.find((x) => x.shot === want) || null;
+  }
+  const tagged = withImg.find((x) => x.first === id);
+  if (tagged) return tagged;
   const kind = FIRST_KIND[id];
-  if (!kind || !rec || rec.pre) return '';
-  const e = m.events.find((x) => x.kind === kind && x.img);
+  return kind ? (withImg.find((x) => x.kind === kind && x.date === rec.when) || null) : null;
+}
+function firstThumb(m, id, rec) {
+  const e = firstEvent(m, id, rec);
   return e ? '<button class="thumb" type="button" data-lbone="' + m.events.indexOf(e) + '" aria-label="Open screenshot"><img src="' + e.img.url + '" alt="" loading="lazy" decoding="async"></button>' : '';
 }
 function viewRecords(m) {
